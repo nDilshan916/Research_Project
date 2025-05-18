@@ -1,4 +1,4 @@
-from model import RecommendationSystem
+from backend.flask.model import RecommendationSystem
 
 def main():
     # Initialize the recommendation system

@@ -1,21 +1,22 @@
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+from sklearn.cluster import KMeans
 
 class RecommendationSystem:
     def __init__(self, data_path):
         self.data_path = data_path
         self.df = None
         self.cosine_sim = None
+        self.kmeans = None
 
     def load_data(self):
         """Load dataset from the specified path and create skill profiles."""
         self.df = pd.read_excel(self.data_path)
         self.df.dropna(inplace=True)
         self.df['Job title'] = self.df['Job title'].str.lower()
-        
-        # Create wat to find profile
+
+        # Create way to find profile
         self.df['Found_Profile'] = self.df.apply(self.create_found_profile, axis=1)
         self.df['Found_Profile'] = self.df['Found_Profile'].fillna('')
         self.df = self.df[self.df['Found_Profile'].str.strip() != '']
@@ -24,14 +25,19 @@ class RecommendationSystem:
         self.df['Skill_Profile'] = self.df.apply(self.create_skill_profile, axis=1)
         self.df['Skill_Profile'] = self.df['Skill_Profile'].fillna('')
         self.df = self.df[self.df['Skill_Profile'].str.strip() != '']
-        
+
         # Create factors for job titles
         self.df['Factor_Profile'] = self.df.apply(self.create_factor_profile, axis=1)
         self.df['Factor_Profile'] = self.df['Factor_Profile'].fillna('')
         self.df = self.df[self.df['Factor_Profile'].str.strip() != '']
-        
+
+        # If you have a 'category' column from semantic classification, keep it
+        if 'category' in self.df.columns:
+            self.df['category'] = self.df['category'].fillna('')
+
+        self.df.reset_index(drop=True, inplace=True)
+
     def create_found_profile(self, row):
-        """Generate a found profile for each row."""
         found = []
         if 'From_Newspaper' in row and row['From_Newspaper'] == 1:
             found.append("Newspaper")
@@ -52,7 +58,6 @@ class RecommendationSystem:
         return ' '.join(found)
 
     def create_skill_profile(self, row):
-        """Generate a skill profile for each row."""
         skills = []
         if 'Factor_Research experience' in row and row['Factor_Research experience'] == 1:
             skills.append("research")
@@ -75,9 +80,8 @@ class RecommendationSystem:
         if 'Cultural Activities' in row and row['Cultural Activities'] == 1:
             skills.append("cultural activities")
         return ' '.join(skills)
-    
+
     def create_factor_profile(self, row):
-        """Generate a factor profile for each row."""
         factors = []
         if 'Factor_Degree' in row and row['Factor_Degree'] == 1:
             factors.append("A Degree")
@@ -95,37 +99,33 @@ class RecommendationSystem:
             factors.append("Additional Qualifications")
         return ' '.join(factors)
 
-    def build_similarity_matrix(self):
-        """Build a TF-IDF-based cosine similarity matrix for job titles."""
-        tfidf = TfidfVectorizer(stop_words='english')
-        tfidf_matrix = tfidf.fit_transform(self.df['Job title'])
-        self.cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
-    def recommend(self, job_title, top_n=5):
-        """Recommend jobs similar to the given job title and include relevant skills."""
-        job_title = job_title.lower()
-        if job_title not in self.df['Job title'].values:
-            return f"'{job_title}' not found in the dataset."
+    def get_all_categories(self):
+        """Return all unique categories (for dropdowns)."""
+        if 'category' in self.df.columns:
+            return sorted(self.df['category'].dropna().unique().tolist())
+        return []
 
-        idx = self.df[self.df['Job title'] == job_title].index[0]
-        sim_scores = list(enumerate(self.cosine_sim[idx]))
-        sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-        sim_scores = sim_scores[1:top_n + 1]
-        job_indices = [i[0] for i in sim_scores]
-        return self.df.iloc[job_indices][['Job title', 'Found_Profile', 'Skill_Profile', 'Factor_Profile', 'Type of Degree', 'Department']]
+    def recommend(self, category, top_n=5):
+        """Recommend jobs for a given category (from the 'category' column)."""
+        if 'category' not in self.df.columns:
+            return []
+        jobs = self.df[self.df['category'].str.strip().str.lower() == category.strip().lower()]
+        if jobs.empty:
+            return []
+        jobs = jobs.head(top_n)
+        return jobs[['Job title', 'Found_Profile', 'Skill_Profile', 'Factor_Profile', 'Type of Degree', 'Department']].to_dict(orient='records')
+    
 
-    def recommend_career_path(self, job_title):
-        """Provide the best career path for a given job title."""
-        job_title = job_title.lower()
-        if job_title not in self.df['Job title'].values:
-            return f"'{job_title}' not found in the dataset."
-
-        job_info = self.df[self.df['Job title'] == job_title].iloc[0]
-        return {
-            "Job Title": job_info['Job title'],
-            "Way to Find": job_info['Found_Profile'],
-            "Required Skills": job_info['Skill_Profile'],
-            "Required Factors": job_info['Factor_Profile'],
-            "Recommended Degree": job_info['Type of Degree'],
-            "Recommended Department": job_info['Department']
-        }
+    def get_job_titles_by_semantic_category(self):
+        """
+        Returns a dictionary where keys are semantic categories (from the 'category' column)
+        and values are lists of job titles in that category.
+        """
+        grouped = {}
+        if 'category' not in self.df.columns:
+            raise ValueError("The DataFrame does not have a 'category' column.")
+        for cat in sorted(self.df['category'].dropna().unique()):
+            titles = sorted(self.df[self.df['category'] == cat]['Job title'].unique())
+            grouped[cat] = titles
+        return grouped
