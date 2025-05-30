@@ -1,0 +1,39 @@
+const API_BASE_URL = "http://localhost:5000";
+
+/**
+ * Generic API request function with error handling
+ */
+async function apiRequest(endpoint, options = {}) {
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`API request failed: ${endpoint}`, error);
+    throw error;
+  }
+}
+
+export const api = {
+  getCategories: () => apiRequest("/categories"),
+  getJobs: (category) => apiRequest(`/jobs/${encodeURIComponent(category)}`),
+  getCategoryDetails: (category) =>
+    apiRequest(`/category/${encodeURIComponent(category)}`),
+  predictSkills: (jobTitle, skills, subjects) =>
+    apiRequest("/predict", {
+      method: "POST",
+      body: JSON.stringify({ job_title: jobTitle, skills, subjects }),
+    }),
+  getClusters: (numClusters = 5) =>
+    apiRequest(`/cluster?clusters=${numClusters}`),
+};

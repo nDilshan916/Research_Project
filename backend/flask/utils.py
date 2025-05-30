@@ -1,11 +1,18 @@
-import pandas as pd
+categories = {
+    "Software Development": ["software engineer", ...],
+    # Add other categories and jobs
+}
 
-def preprocess_data(df):
-    """Preprocess the dataset."""
-    df.dropna(inplace=True)
-    df['Job title'] = df['Job title'].str.lower()
-    return df
+def map_job_to_category(job_title):
+    job_title = job_title.lower()
+    for category, keywords in categories.items():
+        if any(keyword in job_title for keyword in keywords):
+            return category
+    return "Other"
 
-def clean_job_title(title):
-    # Example: simple cleaning
-    return title.strip().lower()
+def get_jobs_by_category(category):
+    import pandas as pd
+    df = pd.read_csv('data/alumni_clean.csv')
+    df['Job Category'] = df['Job title'].apply(map_job_to_category)
+    return df[df['Job Category'] == category]['Job title'].dropna().unique().tolist()
+
