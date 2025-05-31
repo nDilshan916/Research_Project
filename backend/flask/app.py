@@ -43,6 +43,15 @@ def cluster_jobs():
     n_clusters = request.args.get('clusters', default=5, type=int)
     return jsonify(model.cluster_job_profiles(n_clusters))
 
+@app.route('/job_title_clusters/<job_title>')
+def get_job_title_clusters(job_title):
+    n_clusters = int(request.args.get('clusters', 5))
+    return jsonify(model.job_title_clusters(job_title, n_clusters))
+
+@app.route('/job_details/<job_title>')
+def get_job_details(job_title):
+    return jsonify(model.get_job_details(job_title))
+    
 # @app.route('/visualizations/<filename>')
 # def get_visualization(filename):
 #     """Serve visualization images"""

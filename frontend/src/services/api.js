@@ -34,6 +34,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ job_title: jobTitle, skills, subjects }),
     }),
-  getClusters: (numClusters = 5) =>
-    apiRequest(`/cluster?clusters=${numClusters}`),
+  getJobDetails: (jobTitle) =>
+    apiRequest(`/job_details/${encodeURIComponent(jobTitle)}`),
+  getJobTitleClusters: (jobTitle, clusters = 5) =>
+    apiRequest(
+      `/job_title_clusters/${encodeURIComponent(jobTitle)}?clusters=${clusters}`
+    ),
 };
