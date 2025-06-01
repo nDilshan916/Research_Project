@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import model
 
@@ -9,7 +9,6 @@ CORS(app)
 def list_categories():
     """Return all unique job categories"""
     if model.df is not None:
-        # Extract unique categories from the dataframe
         categories = sorted(model.df['category'].unique().tolist())
         return jsonify(categories)
     return jsonify([]), 500
@@ -27,16 +26,6 @@ def list_jobs(category):
         return jsonify(sorted(jobs))
     return jsonify([]), 500
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    """Predict missing skills and subjects for a job"""
-    data = request.get_json()
-    job_title = data.get('job_title', '')
-    skills = data.get('skills', [])
-    subjects = data.get('subjects', [])
-    
-    return jsonify(model.predict_missing(job_title, skills, subjects))
-
 @app.route('/cluster', methods=['GET'])
 def cluster_jobs():
     """Cluster job profiles for visualization"""
@@ -45,13 +34,24 @@ def cluster_jobs():
 
 @app.route('/job_title_clusters/<job_title>')
 def get_job_title_clusters(job_title):
-    n_clusters = int(request.args.get('clusters', 5))
-    return jsonify(model.job_title_clusters(job_title, n_clusters))
+    return jsonify(model.job_title_clusters(job_title))
 
 @app.route('/job_details/<job_title>')
 def get_job_details(job_title):
-    return jsonify(model.get_job_details(job_title))
-    
+    print(f"[Flask] Received request for job_title: {job_title}")
+    try:
+        details = model.get_job_details(job_title)
+        print(f"[Flask] Details returned for {job_title}: {details}")
+        if details is None:
+            # Not found or no data
+            return jsonify({"error": "No details found for job title"}), 404
+        return jsonify(details)
+    except Exception as e:
+        print(f"[Flask] ERROR for job_title {job_title}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# If you want to serve generated images, uncomment these lines:
 # @app.route('/visualizations/<filename>')
 # def get_visualization(filename):
 #     """Serve visualization images"""

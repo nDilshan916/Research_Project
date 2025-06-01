@@ -387,7 +387,17 @@ def generate_category_description(subset, top_skills, top_subjects):
     
     return description
 
-def cluster_job_profiles(n_clusters=5):
+def get_combined_features():
+    return df.apply(
+        lambda x: f"{str(x.get('Skill_Profile', ''))} {str(x.get('Factor_Profile', ''))}",
+        axis=1
+    ).fillna("").tolist()
+    
+def get_alumni_dataframe():
+    """Return the main alumni DataFrame, always up-to-date."""
+    return df
+    
+def cluster_job_profiles(n_clusters=10):
     """
     Implement clustering of job profiles based on skills and subjects
     as described in the research paper.
@@ -512,26 +522,28 @@ def get_job_details(job_title):
         "JobMatches": subset['Job title'].tolist()[:5]
     }
     
-def job_title_clusters(job_title, n_clusters=5):
+def job_title_clusters(job_title):
     """
-    For a given job title, return cluster summary information showing
-    the different skill/factor paths to that job.
+    For a job title, returns all clusters with that job title and their skill/factor breakdowns.
+    Assumes clustering has already been run and df['cluster'] exists.
     """
-    if df.empty:
-        return {"error": "No data available"}
-    # Subset for job title
+    if df.empty or 'cluster' not in df.columns:
+        return {"error": "No data available or clustering not run"}
+    result = []
     subset = df[df['Job title'].str.lower().str.contains(job_title.lower())]
     if subset.empty:
         return {"error": f"No jobs found for title: {job_title}"}
-    # Use the same clustering approach as cluster_job_profiles, but only on subset
-    # (Or, cluster all, then filter clusters containing this job title.)
-    cluster_results = cluster_job_profiles(n_clusters)
-    clusters_with_title = {}
-    for c, info in cluster_results.get('ClusterData', {}).items():
-        filtered_jobs = [jt for jt in info['JobTitles'] if job_title.lower() in jt.lower()]
-        if filtered_jobs:
-            clusters_with_title[c] = {
-                **info,
-                "FilteredJobTitles": filtered_jobs
-            }
-    return clusters_with_title or {"message": "No clusters found for this job title in current clustering."}
+    for cluster_id in sorted(subset['cluster'].unique()):
+        cdf = subset[subset['cluster'] == cluster_id]
+        skills = ", ".join(cdf['Skill_Profile'].fillna("")).lower().split(',')
+        factors = ", ".join(cdf['Factor_Profile'].fillna("")).lower().split(',')
+        skill_counts = Counter(s.strip() for s in skills if s.strip())
+        factor_counts = Counter(f.strip() for f in factors if f.strip())
+        result.append({
+            "cluster_id": int(cluster_id),
+            "size": len(cdf),
+            "top_skills": [s for s, _ in skill_counts.most_common(7)],
+            "top_factors": [f for f, _ in factor_counts.most_common(7)],
+            "job_titles": cdf['Job title'].tolist()
+        })
+    return result
