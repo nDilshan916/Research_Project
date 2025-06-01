@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import model
+import pandas as pd
+from collections import Counter
 
 app = Flask(__name__)
 CORS(app)
@@ -50,8 +52,38 @@ def get_job_details(job_title):
         print(f"[Flask] ERROR for job_title {job_title}: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/job_dashboard_data/<job_title>')
+def get_job_dashboard_data(job_title):
+    """
+    Aggregated data for job dashboard visualizations:
+    - Sector/department/degree distributions
+    - Yearly trend
+    """
+    subset = model.df[model.df['Job title'].str.lower().str.contains(job_title.lower())].copy()
+    if subset.empty:
+        return jsonify({"error": "No jobs found for this title"}), 404
 
-# If you want to serve generated images, uncomment these lines:
+    # Sector/department/degree distributions
+    sector_counts = subset['Sector'].value_counts().to_dict() if 'Sector' in subset.columns else {}
+    dept_counts = subset['Department'].value_counts().to_dict() if 'Department' in subset.columns else {}
+    degree_counts = subset['Type of Degree'].value_counts().to_dict() if 'Type of Degree' in subset.columns else {}
+
+    # Yearly trend
+    if "Date of current appointment " in subset.columns:
+        subset["year"] = pd.to_datetime(subset["Date of current appointment "], errors="coerce").dt.year
+        year_counts = subset["year"].value_counts().sort_index().to_dict()
+    else:
+        year_counts = {}
+
+    return jsonify({
+        "sector_counts": sector_counts,
+        "dept_counts": dept_counts,
+        "degree_counts": degree_counts,
+        "year_counts": year_counts,
+        "total_count": len(subset)
+    })
+
+# Uncomment to serve generated images if needed
 # @app.route('/visualizations/<filename>')
 # def get_visualization(filename):
 #     """Serve visualization images"""

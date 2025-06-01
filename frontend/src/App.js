@@ -66,7 +66,7 @@ function MainApp() {
             }
           }}
         >
-          View Job Dashboard
+          View Dashboard
         </button>
       )}
     </div>
