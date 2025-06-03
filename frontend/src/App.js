@@ -8,25 +8,26 @@ import {
 import CategoryList from "./components/CategoryList";
 import JobSelector from "./components/JobSelector";
 import ProfileForm from "./components/ProfileForm";
-import PredictionResult from "./components/PredictionResult";
-import JobTitlePaths from "./components/JobTitlePaths";
+// import PredictionResult from "./components/PredictionResult";
 import JobDashboard from "./components/JobDashboard";
+import "./App.css"; // Import the new CSS for better styles
 
 function MainApp() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [result, setResult] = useState(null);
+  // const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // Reset job and result on category change
   useEffect(() => {
     setSelectedJob(null);
-    setResult(null);
+    // setResult(null);
   }, [selectedCategory]);
 
   // Reset result on job change
   useEffect(() => {
-    setResult(null);
+    // setResult(null);
   }, [selectedJob]);
 
   useEffect(() => {
@@ -36,39 +37,47 @@ function MainApp() {
   }, [selectedJob]);
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">AI Career Guide</h1>
-      <CategoryList onSelect={setSelectedCategory} />
-      {selectedCategory && (
-        <JobSelector
-          category={selectedCategory}
-          onSelect={setSelectedJob}
-          selectedJob={selectedJob}
+    <div className="main-container">
+      <div className="header">
+        <h1>Career Guide</h1>
+        <p className="subtitle">Discover, Plan, and Track Your Path</p>
+      </div>
+      <div className="content-card">
+        <CategoryList
+          onSelect={setSelectedCategory}
+          selected={selectedCategory}
         />
-      )}
-      {selectedJob && (
-        <>
-          <JobTitlePaths jobTitle={selectedJob} />
-          <ProfileForm selectedJobTitle={selectedJob} />
-        </>
-      )}
-      {result && <PredictionResult result={result} />}
+        {selectedCategory && (
+          <JobSelector
+            category={selectedCategory}
+            onSelect={setSelectedJob}
+            selectedJob={selectedJob}
+          />
+        )}
 
-      {selectedJob && (
-        <button
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-          onClick={() => {
-            if (selectedJob) {
-              console.log("Navigating to dashboard for job:", selectedJob);
-              navigate(`/dashboard/${encodeURIComponent(selectedJob)}`);
-            } else {
-              alert("Please select a job first.");
-            }
-          }}
-        >
-          View Dashboard
-        </button>
-      )}
+        {loading && (
+          <div className="loading-overlay">
+            <div className="spinner"></div>
+            <div className="loading-text">Loading...</div>
+          </div>
+        )}
+
+        {selectedJob && (
+          <button
+            className="discover-btn"
+            disabled={loading}
+            onClick={() => {
+              setLoading(true);
+              setTimeout(() => {
+                navigate(`/profile/${encodeURIComponent(selectedJob)}`);
+                setLoading(false);
+              }, 2000);
+            }}
+          >
+            {loading ? "Loading..." : "Discover"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -78,6 +87,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<MainApp />} />
+        <Route path="/profile/:jobTitle" element={<ProfileForm />} />
         <Route path="/dashboard/:jobTitle" element={<JobDashboard />} />
       </Routes>
     </Router>

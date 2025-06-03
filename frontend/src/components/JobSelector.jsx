@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api";
+import "../App.css"; // Import the new CSS for better styles
 
 export default function JobSelector({ category, onSelect, selectedJob }) {
   const [jobs, setJobs] = useState([]);
@@ -48,9 +49,7 @@ export default function JobSelector({ category, onSelect, selectedJob }) {
         {jobs.map((job) => (
           <button
             key={job}
-            className={`p-2 border rounded hover:bg-gray-100 ${
-              selectedJob === job ? "bg-blue-200 border-blue-500 font-bold" : ""
-            }`}
+            className={`selector-btn${selectedJob === job ? " selected" : ""}`}
             onClick={() => onSelect(job)}
           >
             {job}

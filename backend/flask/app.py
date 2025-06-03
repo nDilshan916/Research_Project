@@ -83,11 +83,6 @@ def get_job_dashboard_data(job_title):
         "total_count": len(subset)
     })
 
-# Uncomment to serve generated images if needed
-# @app.route('/visualizations/<filename>')
-# def get_visualization(filename):
-#     """Serve visualization images"""
-#     return send_from_directory(model.VISUALIZATIONS_DIR, filename)
 
 if __name__ == '__main__':
     app.run(debug=True)
