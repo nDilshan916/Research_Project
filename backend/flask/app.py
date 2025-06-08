@@ -1,11 +1,21 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import model
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+import model  # your own model (model.py)
 import pandas as pd
 from collections import Counter
 
 app = Flask(__name__)
 CORS(app)
+
+# Use the much better Gemma 2B Instruct model!
+MODEL_NAME = "google/gemma-2b-it"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+gemma_model = AutoModelForCausalLM.from_pretrained(
+    MODEL_NAME,
+    torch_dtype=torch.float32  # Use float32 for CPU; use float16 if you have a GPU with enough VRAM
+)
 
 @app.route('/categories')
 def list_categories():
@@ -82,6 +92,63 @@ def get_job_dashboard_data(job_title):
         "year_counts": year_counts,
         "total_count": len(subset)
     })
+
+
+@app.route("/api/ai-assistant", methods=["POST"])
+def ai_assistant():
+    data = request.json
+    job_title = data.get("jobTitle")
+    user_question = data.get("question", "")
+
+    # Get job details
+    job_details = model.get_job_details(job_title)
+    if not job_details:
+        return jsonify({"answer": "Sorry, I don't have enough data about this job title."}), 404
+
+    skills = ', '.join(job_details.get("Skills", []))
+    factors = ', '.join(job_details.get("Factors", []))
+    how_to_get = ', '.join(job_details.get("HowToGet", []))
+
+    # Build a focused, instructional prompt for Gemma Instruct
+    prompt = (
+        f"<start_of_turn>user\n"
+        f"Job Title: {job_title}\n\n"
+        f"Skills required: {skills}\n"
+        f"Important factors: {factors}\n"
+        f"How to get this job: {how_to_get}\n\n"
+    )
+    if user_question.strip():
+        prompt += f"Question: {user_question.strip()}\n\n"
+
+    prompt += (
+        "Please provide a detailed, step-by-step guide for this question. "
+        "Include practical steps, resume tips, and where to find jobs if relevant.\n"
+        "<end_of_turn>\n<start_of_turn>model\n"
+    )
+
+    # Generate with Gemma 2B-Instruct
+    input_ids = tokenizer.encode(prompt, return_tensors="pt")
+    with torch.no_grad():
+        output_ids = gemma_model.generate(
+            input_ids,
+            max_new_tokens=300,
+            temperature=0.8,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id
+        )
+    generated_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+    answer = generated_text[len(prompt):].strip() if generated_text.startswith(prompt) else generated_text.strip()
+
+    # Optional: Remove repeated lines and "Contact Information" hallucinations
+    answer_lines = []
+    seen = set()
+    for line in answer.split('\n'):
+        if line.strip() and line not in seen and not line.strip().lower().startswith("contact information"):
+            answer_lines.append(line)
+            seen.add(line)
+    answer = "\n".join(answer_lines)
+
+    return jsonify({"answer": answer})
 
 
 if __name__ == '__main__':

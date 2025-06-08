@@ -8,6 +8,7 @@ import {
 import CategoryList from "./components/CategoryList";
 import JobSelector from "./components/JobSelector";
 import ProfileForm from "./components/ProfileForm";
+import JobAssistant from "./components/JobAssistant";
 // import PredictionResult from "./components/PredictionResult";
 import JobDashboard from "./components/JobDashboard";
 import "./App.css"; // Import the new CSS for better styles
@@ -89,6 +90,7 @@ export default function App() {
         <Route path="/" element={<MainApp />} />
         <Route path="/profile/:jobTitle" element={<ProfileForm />} />
         <Route path="/dashboard/:jobTitle" element={<JobDashboard />} />
+        <Route path="/AI/:jobTitle" element={<JobAssistant />} />
       </Routes>
     </Router>
   );

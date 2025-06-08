@@ -40,4 +40,13 @@ export const api = {
     apiRequest(
       `/job_title_clusters/${encodeURIComponent(jobTitle)}?clusters=${clusters}`
     ),
+  askLLM: async (jobTitle, question) => {
+    const response = await fetch(`http://localhost:5000/api/ai-assistant`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobTitle, question }),
+    });
+    if (!response.ok) throw new Error("AI API error");
+    return await response.json();
+  },
 };

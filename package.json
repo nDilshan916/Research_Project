@@ -1,6 +1,16 @@
 {
+  "proxy": "http://localhost:5000",
   "dependencies": {
     "framer-motion": "^12.12.1",
     "react-router-dom": "^7.6.1"
+  },
+  "scripts": {
+    "start": "concurrently \"npm run start-backend\" \"npm run start-frontend\" \"npm run start-dash\"",
+    "start-backend": "cd backend/flask && python app.py",
+    "start-frontend": "cd frontend && npm start",
+    "start-dash": "cd backend/flask && python dash_app.py"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }

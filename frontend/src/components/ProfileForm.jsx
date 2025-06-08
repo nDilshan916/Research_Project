@@ -46,6 +46,18 @@ export default function ProfileForm() {
           </div>
         </div>
       )}
+
+      {
+        <button
+          className="dashboard-btn"
+          onClick={() => {
+            navigate(`/AI/${encodeURIComponent(jobTitle)}`);
+          }}
+        >
+          Learn More
+        </button>
+      }
+
       {
         <button
           className="dashboard-btn"
