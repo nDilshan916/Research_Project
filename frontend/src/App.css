@@ -33,6 +33,18 @@ body {
   margin-bottom: 0;
 }
 
+.jobcat {
+  color: #212b3c;
+  font-size: 2.2rem;
+  /* justify-self: center; */
+}
+
+.jobtitle {
+  color: #212b3c;
+  font-size: 2.2rem;
+  /* justify-self: center; */
+}
+
 .content-card {
   padding: 18px 0;
 }

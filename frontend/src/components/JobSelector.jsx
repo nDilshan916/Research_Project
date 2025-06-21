@@ -43,7 +43,7 @@ export default function JobSelector({ category, onSelect, selectedJob }) {
 
   return (
     <div className="mb-4">
-      <h2 className="text-lg font-semibold mb-2">Select a Job Title</h2>
+      <h2 className="jobtitle">Select a Job Title</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         {jobs.map((job) => (

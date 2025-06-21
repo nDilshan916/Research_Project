@@ -34,12 +34,14 @@ export default function CategoryList({ onSelect, selected }) {
 
   return (
     <div className="mb-4">
-      <h2 className="text-lg font-semibold mb-2">Select a Job Category</h2>
+      <h2 className="jobcat">Select a Job Category</h2>
       <div className="category-buttons-container">
         {categories.map((category) => (
           <button
             key={category}
-            className={`selector-btn${selected === category ? " selected" : ""}`}
+            className={`selector-btn${
+              selected === category ? " selected" : ""
+            }`}
             onClick={() => onSelect(category)}
           >
             {category}
