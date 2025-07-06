@@ -4,7 +4,7 @@ import torch
 import model  # your own model (model.py)
 import pandas as pd
 import logging
-from transformers import AutoTokenizer, BlenderbotForConditionalGeneration
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # --- Setup logging ---
 logging.basicConfig(level=logging.INFO)
@@ -14,19 +14,36 @@ logger = logging.getLogger("flask_app")
 app = Flask(__name__)
 CORS(app)
 
-# --- AI Model Setup (load once on app start) ---
-MODEL_NAME = "facebook/blenderbot-400M-distill"
+# --- Qwen AI Model Setup ---
+class QwenChatbot:
+    def __init__(self, model_name="Qwen/Qwen3-0.6B"):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        self.history = []
 
-device = torch.device("cpu")
+    def generate_response(self, user_input):
+        messages = self.history + [{"role": "user", "content": user_input}]
+        text = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        inputs = self.tokenizer(text, return_tensors="pt")
+        response_ids = self.model.generate(
+            **inputs,
+            max_new_tokens=512
+        )[0][len(inputs.input_ids[0]):].tolist()
+        response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
+        self.history.append({"role": "user", "content": user_input})
+        self.history.append({"role": "assistant", "content": response})
+        return response
 
 try:
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    blenderbot_model = BlenderbotForConditionalGeneration.from_pretrained(MODEL_NAME).to(device)
-    logger.info("Loaded Blenderbot model successfully.")
+    qwen_bot = QwenChatbot()
+    logger.info("Loaded Qwen model successfully.")
 except Exception as e:
-    logger.error(f"Failed to load Blenderbot model: {e}")
-    tokenizer = None
-    blenderbot_model = None
+    logger.error(f"Failed to load Qwen model: {e}")
+    qwen_bot = None
 
 @app.route('/health')
 def health_check():
@@ -104,7 +121,7 @@ def get_job_dashboard_data(job_title):
 
 @app.route("/api/ai-assistant", methods=["POST"])
 def ai_assistant():
-    if blenderbot_model is None or tokenizer is None:
+    if qwen_bot is None:
         return jsonify({"answer": "AI model not loaded."}), 500
 
     data = request.json
@@ -115,7 +132,7 @@ def ai_assistant():
     if not job_details:
         return jsonify({"answer": "Sorry, I don't have enough data about this job title."}), 404
 
-    # Compose a conversational prompt for BlenderBot
+    # Compose a conversational prompt for Qwen
     context = (
         f"I want to become a {job_title}. "
         f"Skills required: {', '.join(job_details.get('Skills', []))}. "
@@ -128,18 +145,11 @@ def ai_assistant():
         prompt = f"{context} Please give me a friendly, step-by-step guide with practical advice and tips."
 
     try:
-        inputs = tokenizer([prompt], max_length=512, return_tensors="pt", truncation=True).to(device)
-        output_ids = blenderbot_model.generate(
-            inputs['input_ids'],
-            max_length=256,
-            num_beams=4,
-            early_stopping=True
-        )
-        answer = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        answer = qwen_bot.generate_response(prompt)
         return jsonify({"answer": answer})
     except Exception as e:
         logger.error(f"AI assistant error: {e}")
         return jsonify({"answer": "AI generation failed: " + str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    app.run(debug=True, port=5001)

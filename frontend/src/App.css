@@ -177,6 +177,7 @@ body {
   animation: pulse-glow 2.5s infinite;
 }
 
+/* --- Loading overlay and spinner for AI response --- */
 .loading-overlay {
   position: fixed;
   top: 0;
