@@ -26,12 +26,13 @@ class QwenChatbot:
         text = self.tokenizer.apply_chat_template(
             messages,
             tokenize=False,
-            add_generation_prompt=True
+            add_generation_prompt=True,
+            enable_thinking=False
         )
         inputs = self.tokenizer(text, return_tensors="pt")
         response_ids = self.model.generate(
             **inputs,
-            max_new_tokens=512
+            max_new_tokens=512 # Adjust as needed 512
         )[0][len(inputs.input_ids[0]):].tolist()
         response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
         self.history.append({"role": "user", "content": user_input})
@@ -140,9 +141,9 @@ def ai_assistant():
         f"How to get this job: {', '.join(job_details.get('HowToGet', []))}. "
     )
     if user_question.strip():
-        prompt = f"{context} {user_question.strip()} Please give me a friendly, step-by-step guide with practical advice and tips."
+        prompt = f"{context} {user_question.strip()} Please give me a professional, step-by-step guide with practical advice and tips."
     else:
-        prompt = f"{context} Please give me a friendly, step-by-step guide with practical advice and tips."
+        prompt = f"{context} Please give me a professional, step-by-step guide with practical advice and tips."
 
     try:
         answer = qwen_bot.generate_response(prompt)

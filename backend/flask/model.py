@@ -120,7 +120,8 @@ def load_data():
         logger.info("Processing data and creating profiles...")
         
         # Clean data - only run these operations if they haven't been run before
-        df['Job title'] = df['Job title'].str.lower() if 'Job title' in df.columns else df.index.astype(str)
+        # df['Job title'] = df['Job title'].str.lower() if 'Job title' in df.columns else df.index.astype(str)
+        df['Job title'] = df['Job title'].str.strip().str.title()
         
         # Ensure category column exists
         if 'category' not in df.columns and 'Job Category' in df.columns:

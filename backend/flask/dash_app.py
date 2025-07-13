@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objs as go
 import requests
 
-BACKEND_URL = "http://localhost:5000/job_dashboard_data"
+BACKEND_URL = "http://localhost:5001/job_dashboard_data"
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server  # for deployment
