@@ -1,19 +1,19 @@
-from backend.flask.model import RecommendationSystem
+from flask import Flask
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.serving import run_simple
 
-def main():
-    # Initialize the recommendation system
-    data_path = "data/cleaned_data.xlsx"
-    recommender = RecommendationSystem(data_path)
+# The Dash app needs `server` set for WSGI mounting (common in Dash)
+# If dash_app is a Dash instance, use dash_app.server
+from backend.flask.app import app as flask_app  # Import your Flask app
+from backend.flask.dash_app import app as dash_app  # Import your Dash app
 
-    # Load data and build the similarity matrix
-    recommender.load_data()
-    recommender.build_similarity_matrix()
-
-    # Get recommendations
-    job_title = input("Enter a job title: ")
-    recommendations = recommender.recommend(job_title)
-    print("\nRecommended Jobs:")
-    print(recommendations)
+application = DispatcherMiddleware(
+    flask_app,  # Serve Flask at "/"
+    {
+        "/dash": dash_app.server  # Serve Dash at "/dash"
+    }
+)
 
 if __name__ == "__main__":
-    main()
+    # For local testing only; in production use Gunicorn!
+    run_simple("0.0.0.0", 5000, application, use_reloader=True)

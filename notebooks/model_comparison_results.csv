@@ -1,0 +1,5 @@
+Model,Accuracy,Avg Inference Time (s),Embedding Dim
+all-MiniLM-L6-v2,0.833,0.0252,384
+all-mpnet-base-v2,1.0,0.0634,768
+paraphrase-MiniLM-L12-v2,0.833,0.0431,384
+distilbert-base-nli-stsb-mean-tokens,1.0,0.0374,768
