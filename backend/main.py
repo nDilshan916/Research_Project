@@ -1,11 +1,10 @@
 from flask import Flask
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.serving import run_simple
-
 # The Dash app needs `server` set for WSGI mounting (common in Dash)
 # If dash_app is a Dash instance, use dash_app.server
-from backend.flask.app import app as flask_app  # Import your Flask app
-from backend.flask.dash_app import app as dash_app  # Import your Dash app
+from flask_app.app import app as flask_app  # Import your Flask app
+from flask_app.dash_app import app as dash_app  # Import your Dash app
 
 application = DispatcherMiddleware(
     flask_app,  # Serve Flask at "/"

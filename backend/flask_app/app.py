@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import torch
-import model  # your own model (model.py)
+from . import model  # your own model (model.py)
 import pandas as pd
 import logging
 from transformers import AutoModelForCausalLM, AutoTokenizer

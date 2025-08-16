@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/6bbafafd-1025-435a-aa72-19bd7e1301c7/resourceGroups/myResourceGroup/providers/Microsoft.Web/sites/CareerGuideML",
+    "appService.deploySubpath": "."
+}
