@@ -1,17 +1,23 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import torch
 from . import model  # your own model (model.py)
 import pandas as pd
 import logging
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import os
 
 # --- Setup logging ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("flask_app")
 
-# --- Flask App Setup ---
-app = Flask(__name__)
+# --- Flask App Setup (serve React build) ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(
+    __name__,
+    static_folder=os.path.join(BASE_DIR, "static"),
+    template_folder=os.path.join(BASE_DIR, "templates"),
+)
 CORS(app)
 
 # --- Qwen AI Model Setup ---
@@ -27,12 +33,12 @@ class QwenChatbot:
             messages,
             tokenize=False,
             add_generation_prompt=True,
-            enable_thinking=False
+            enable_thinking=False,
         )
         inputs = self.tokenizer(text, return_tensors="pt")
         response_ids = self.model.generate(
             **inputs,
-            max_new_tokens=512 # Adjust as needed 512
+            max_new_tokens=512  # Adjust as needed
         )[0][len(inputs.input_ids[0]):].tolist()
         response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
         self.history.append({"role": "user", "content": user_input})
@@ -46,6 +52,16 @@ except Exception as e:
     logger.error(f"Failed to load Qwen model: {e}")
     qwen_bot = None
 
+# --- React frontend route ---
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_react(path):
+    """Serve React build (index.html for SPA routes)"""
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return app.send_static_file(path)
+    return render_template("index.html")
+
+# --- API Routes ---
 @app.route('/health')
 def health_check():
     return jsonify({"status": "ok"})
