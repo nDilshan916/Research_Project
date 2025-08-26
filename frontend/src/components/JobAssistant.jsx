@@ -1,24 +1,13 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../services/api";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 import "../App.css";
 
 function renderMarkdown(text) {
-  // Basic markdown for bold, italics, lists, headers
-  let html = text
-    .replace(/^### (.*)$/gm, '<div class="ai-md-h3">$1</div>')
-    .replace(/^---$/gm, '<hr class="ai-md-hr"/>')
-    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-    .replace(/\*(.*?)\*/g, '<i>$1</i>')
-    .replace(/^-\s(.*)$/gm, '<li>$1</li>')
-    .replace(/<li>([\s\S]*?)<\/li>/gm, '<ul class="ai-md-list"><li>$1</li></ul>')
-    .replace(/\n{2,}/g, '<br/>')
-    .replace(/\n/g, ' ');
-
-  // Remove duplicate <ul> from multiple lines
-  html = html.replace(/(<ul class="ai-md-list">)+/g, '<ul class="ai-md-list">');
-  html = html.replace(/(<\/ul>)+/g, '</ul>');
-  return html;
+  // Parse markdown and sanitize HTML for security
+  return DOMPurify.sanitize(marked(text, { breaks: true }));
 }
 
 export default function JobAIAssistant() {
@@ -49,7 +38,10 @@ export default function JobAIAssistant() {
 
   return (
     <div className="main-container" style={{ maxWidth: 680 }}>
-      <h2 className="jobtitle" style={{ textAlign: "center", marginBottom: 24 }}>
+      <h2
+        className="jobtitle"
+        style={{ textAlign: "center", marginBottom: 24 }}
+      >
         Ask AI about: {decodeURIComponent(jobTitle || "")}
       </h2>
       <textarea
@@ -90,17 +82,6 @@ export default function JobAIAssistant() {
         {!loading && answer && (
           <div
             className="ai-response-box"
-            style={{
-              background: "linear-gradient(120deg, #f6f8fd 85%, #edf9fc 100%)",
-              borderRadius: 16,
-              padding: "24px 26px",
-              color: "#212b3c",
-              boxShadow: "0 2px 16px 0 rgba(80, 112, 255, 0.09)",
-              fontSize: "1.13rem",
-              marginBottom: 20,
-              border: "1.5px solid #e8edfa",
-              lineHeight: 1.7,
-            }}
             dangerouslySetInnerHTML={{ __html: renderMarkdown(answer) }}
           />
         )}

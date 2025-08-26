@@ -45,7 +45,7 @@ function MainApp() {
           jobDetails.JobTitle,
           `For the job title "${
             jobDetails.JobTitle
-          }", respond in a direct and formal style. Do not start with words like 'Absolutely!', 'Certainly!', 'Sure!', or similar. Explain in detail what each of the following necessary skills means and why it is important for the job. List each skill separately, start with the skill name in bold, then give a short, practical explanation:\n${jobDetails.Skills?.map(
+          }", respond in a direct and formal style. Do not start with words like 'Absolutely!', 'Certainly!', 'Sure!', or similar. Explain in detail what each of the following necessary skills means and why it is important for the job. List each skill separately, start with the skill name in bold, then give a short, practical explanation. Don't want a Step-by-Step Guide:\n${jobDetails.Skills?.map(
             (s) => `- ${s}`
           ).join("\n")}`
         ),
@@ -53,7 +53,7 @@ function MainApp() {
           jobDetails.JobTitle,
           `For the job title "${
             jobDetails.JobTitle
-          }", respond in a direct and formal style. Do not start with words like 'Absolutely!', 'Certainly!', 'Sure!', or similar. Here are important factors for success. Please list each factor in bold, then give a concise, practical explanation of how it helps someone succeed:\n${jobDetails.Factors?.map(
+          }", respond in a direct and formal style. Do not start with words like 'Absolutely!', 'Certainly!', 'Sure!', or similar. Here are important factors for success. Please list each factor in bold, then give a concise, practical explanation of how it helps someone succeed. Don't want a Step-by-Step Guide:\n${jobDetails.Factors?.map(
             (f) => `- ${f}`
           ).join("\n")}`
         ),
@@ -61,7 +61,7 @@ function MainApp() {
           jobDetails.JobTitle,
           `For the job title "${
             jobDetails.JobTitle
-          }", respond in a direct and formal style. Do not start with words like 'Absolutely!', 'Certainly!', 'Sure!', or similar. Explain step by step how someone can get this job. List each step or requirement in bold, then add a short explanation or tip:\n${jobDetails.HowToGet?.map(
+          }", respond in a direct and formal style. Do not start with words like 'Absolutely!', 'Certainly!', 'Sure!', or similar. Explain step by step how someone can get this job. List each step or requirement in bold, then add a short explanation or tip. Don't want a Step-by-Step Guide:\n${jobDetails.HowToGet?.map(
             (h) => `- ${h}`
           ).join("\n")}`
         ),

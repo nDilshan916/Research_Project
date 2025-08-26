@@ -232,7 +232,7 @@ def get_alumni_dataframe():
     
 def cluster_job_profiles(n_clusters=10):
     """
-    Implement clustering of job profiles based on skills and subjects
+    Implement clustering of job profiles based on skills and factors
     as described in the research paper.
 
     Parameters:

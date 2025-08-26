@@ -41,7 +41,10 @@ def update_dashboard(search):
     sector_data = data.get("sector_counts", {})
     dept_data = data.get("dept_counts", {})
     degree_data = data.get("degree_counts", {})
+    honor_grade = data.get("honor_grade", {})
     year_data = data.get("year_counts", {})
+    print(data)
+    print(honor_grade)
 
     total_sector = sum(sector_data.values()) if sector_data else 0
     total_degree = sum(degree_data.values()) if degree_data else 0
@@ -80,6 +83,22 @@ def update_dashboard(search):
             )
         )
     ) if dept_data else html.Div("No department data.")
+    
+    # Honor Grade Pie
+    honor_pie = dcc.Graph(
+        figure=go.Figure(
+            data=[
+                go.Pie(
+                    labels=list(honor_grade.keys()),
+                    values=list(honor_grade.values()),
+                    hole=0.4
+                )
+            ],
+            layout=go.Layout(
+                title="Honor of the Degree"
+            )
+        )
+    ) if honor_grade else html.Div("No data.")
 
     # Degree Distribution Bar
     degree_bar = dcc.Graph(
@@ -123,6 +142,7 @@ def update_dashboard(search):
         html.H2(f"Dashboard for: {job_title.title()}", className="mb-4"),
         dbc.Row([dbc.Col(sector_bar, width=12)], className="mb-4"),
         dbc.Row([dbc.Col(dept_pie, width=12)], className="mb-4"),
+        dbc.Row([dbc.Col(honor_pie, width=12)], className="mb-4"),
         dbc.Row([dbc.Col(degree_bar, width=12)], className="mb-4"),
         dbc.Row([dbc.Col(year_chart, width=12)], className="mb-4"),
         html.Div(f"Total records: {data.get('total_count', 0)}", className="mb-2 font-weight-bold"),

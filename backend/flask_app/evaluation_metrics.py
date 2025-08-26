@@ -71,16 +71,16 @@ def prepare_evaluation_data(df):
         
         return skills
     
-    # Create subject profile from factor-related columns
-    def extract_subjects(row):
-        subjects = []
-        subject_columns = [
+    # Create factor profile from factor-related columns
+    def extract_factors(row):
+        factors = []
+        factor_columns = [
             'Factor_Degree', 'Factor_Class of degree', 'Factor_University Project',
             'Factor_Field of study', 'Factor_Personal contacts',
             'Factor_Previous work experience', 'Additional qualifications'
         ]
         
-        subject_mapping = {
+        factor_mapping = {
             'Factor_Degree': 'degree',
             'Factor_Class of degree': 'class of degree',
             'Factor_University Project': 'university projects',
@@ -90,16 +90,16 @@ def prepare_evaluation_data(df):
             'Additional qualifications': 'additional qualifications'
         }
         
-        for col in subject_columns:
+        for col in factor_columns:
             if col in row and row[col] == 1:
-                subjects.append(subject_mapping[col])
+                factors.append(factor_mapping[col])
         
-        return subjects
-    
+        return factors
+
     # Apply the extraction functions
     df['skills'] = df.apply(extract_skills, axis=1)
-    df['subjects'] = df.apply(extract_subjects, axis=1)
-    
+    df['factors'] = df.apply(extract_factors, axis=1)
+
     # Ensure we have a category column
     if 'category' not in df.columns:
         if 'Job Category' in df.columns:
@@ -112,22 +112,22 @@ def prepare_evaluation_data(df):
 def get_top_k_recommendations(category_data, k=5):
     """Get top-k skill and subject recommendations for a category"""
     
-    # Aggregate all skills and subjects for this category
+    # Aggregate all skills and factors for this category
     all_skills = []
-    all_subjects = []
+    all_factors = []
     
     for _, row in category_data.iterrows():
         all_skills.extend(row['skills'])
-        all_subjects.extend(row['subjects'])
+        all_factors.extend(row['factors'])
     
     # Count frequencies and get top-k
     skill_counts = Counter(all_skills)
-    subject_counts = Counter(all_subjects)
-    
+    factor_counts = Counter(all_factors)
+
     top_skills = [skill for skill, _ in skill_counts.most_common(k)]
-    top_subjects = [subject for subject, _ in subject_counts.most_common(k)]
-    
-    return top_skills, top_subjects
+    top_factors = [factor for factor, _ in factor_counts.most_common(k)]
+
+    return top_skills, top_factors
 
 def calculate_precision_at_k(recommended, actual, k=5):
     """Calculate Precision@K"""
@@ -170,8 +170,8 @@ def evaluate_recommendation_system(df, test_ratio=0.3, random_seed=42):
     
     skill_precisions = []
     skill_recalls = []
-    subject_precisions = []
-    subject_recalls = []
+    factor_precisions = []
+    factor_recalls = []
     
     print("🔄 Evaluating recommendations...")
     
@@ -179,8 +179,8 @@ def evaluate_recommendation_system(df, test_ratio=0.3, random_seed=42):
     for idx, test_row in test_df.iterrows():
         category = test_row['category']
         actual_skills = test_row['skills']
-        actual_subjects = test_row['subjects']
-        
+        actual_factors = test_row['factors']
+
         # Get training data for this category
         category_train_data = train_df[train_df['category'] == category]
         
@@ -196,28 +196,28 @@ def evaluate_recommendation_system(df, test_ratio=0.3, random_seed=42):
             recall = calculate_recall_at_k(recommended_skills, actual_skills, k=5)
             skill_precisions.append(precision)
             skill_recalls.append(recall)
-        
-        # Calculate metrics for subjects  
-        if actual_subjects:
-            precision = calculate_precision_at_k(recommended_subjects, actual_subjects, k=5)
-            recall = calculate_recall_at_k(recommended_subjects, actual_subjects, k=5)
-            subject_precisions.append(precision)
-            subject_recalls.append(recall)
+
+        # Calculate metrics for factors
+        if actual_factors:
+            precision = calculate_precision_at_k(recommended_subjects, actual_factors, k=5)
+            recall = calculate_recall_at_k(recommended_subjects, actual_factors, k=5)
+            factor_precisions.append(precision)
+            factor_recalls.append(recall)
     
     # Calculate average metrics
     avg_skill_precision = np.mean(skill_precisions) if skill_precisions else 0
     avg_skill_recall = np.mean(skill_recalls) if skill_recalls else 0
-    avg_subject_precision = np.mean(subject_precisions) if subject_precisions else 0
-    avg_subject_recall = np.mean(subject_recalls) if subject_recalls else 0
-    
+    avg_factor_precision = np.mean(factor_precisions) if factor_precisions else 0
+    avg_factor_recall = np.mean(factor_recalls) if factor_recalls else 0
+
     return {
         'skill_precision_at_5': avg_skill_precision * 100,
         'skill_recall_at_5': avg_skill_recall * 100,
-        'subject_precision_at_5': avg_subject_precision * 100,
-        'subject_recall_at_5': avg_subject_recall * 100,
-        'total_evaluations': len(skill_precisions) + len(subject_precisions),
+        'factor_precision_at_5': avg_factor_precision * 100,
+        'factor_recall_at_5': avg_factor_recall * 100,
+        'total_evaluations': len(skill_precisions) + len(factor_precisions),
         'skill_evaluations': len(skill_precisions),
-        'subject_evaluations': len(subject_precisions)
+        'factor_evaluations': len(factor_precisions)
     }
 
 def main():
@@ -233,11 +233,11 @@ def main():
     # Prepare evaluation data
     print("🔄 Preparing evaluation data...")
     df = prepare_evaluation_data(df)
-    
-    # Filter out rows with no skills or subjects
-    df = df[(df['skills'].str.len() > 0) | (df['subjects'].str.len() > 0)]
-    print(f"✓ {len(df)} records with skills/subjects available for evaluation")
-    
+
+    # Filter out rows with no skills or factors
+    df = df[(df['skills'].str.len() > 0) | (df['factors'].str.len() > 0)]
+    print(f"✓ {len(df)} records with skills/factors available for evaluation")
+
     if len(df) < 10:
         print("❌ Not enough data for reliable evaluation (need at least 10 records)")
         return
@@ -254,20 +254,20 @@ def main():
     print(f"\n📈 METRICS:")
     print(f"├── Skill Precision@5:  {results['skill_precision_at_5']:.1f}%")
     print(f"├── Skill Recall@5:     {results['skill_recall_at_5']:.1f}%")
-    print(f"├── Subject Precision@5: {results['subject_precision_at_5']:.1f}%")
-    print(f"└── Subject Recall@5:    {results['subject_recall_at_5']:.1f}%")
-    
+    print(f"├── Factor Precision@5: {results['factor_precision_at_5']:.1f}%")
+    print(f"└── Factor Recall@5:    {results['factor_recall_at_5']:.1f}%")
+
     print(f"\n📋 EVALUATION DETAILS:")
     print(f"├── Total evaluations:   {results['total_evaluations']}")
     print(f"├── Skill evaluations:   {results['skill_evaluations']}")
-    print(f"└── Subject evaluations: {results['subject_evaluations']}")
-    
-    # Calculate combined metrics (average of skills and subjects)
-    combined_precision = (results['skill_precision_at_5'] + results['subject_precision_at_5']) / 2
-    combined_recall = (results['skill_recall_at_5'] + results['subject_recall_at_5']) / 2
-    
+    print(f"└── Factor evaluations: {results['factor_evaluations']}")
+
+    # Calculate combined metrics (average of skills and factors)
+    combined_precision = (results['skill_precision_at_5'] + results['factor_precision_at_5']) / 2
+    combined_recall = (results['skill_recall_at_5'] + results['factor_recall_at_5']) / 2
+
     print("\n" + "=" * 60)
-    print("📋 FOR YOUR RESEARCH PAPER TABLE:")
+    print("📋 FOR RESEARCH PAPER TABLE:")
     print("=" * 60)
     print(f"Precision@5: {combined_precision:.1f}%")
     print(f"Recall@5:    {combined_recall:.1f}%")

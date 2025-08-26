@@ -7,7 +7,9 @@ function JobDashboard() {
   const decodedJobTitle = decodeURIComponent(jobTitle);
 
   // Pass jobTitle as query param to Dash app
-  const dashUrl = `/dash/?jobTitle=${encodeURIComponent(decodedJobTitle)}`;
+  const dashUrl = `http://localhost:8050/?jobTitle=${encodeURIComponent(
+    decodedJobTitle
+  )}`;
 
   return (
     <div style={{ width: "100%", height: "90vh" }}>

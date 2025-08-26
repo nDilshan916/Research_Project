@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5001";
 
 /**
  * Generic API request function with error handling
@@ -49,4 +49,23 @@ export const api = {
     if (!response.ok) throw new Error("AI API error");
     return await response.json();
   },
+  // getJobSummary: async (jobTitle) => {
+  //   try {
+  //     const response = await fetch(
+  //       `${API_BASE_URL}/api/summary-ai/${encodeURIComponent(jobTitle)}`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({ jobTitle }),
+  //       }
+  //     );
+  //     if (!response.ok) throw new Error("Job summary API error");
+  //     return await response.json();
+  //   } catch (error) {
+  //     console.error("getJobSummary error:", error);
+  //     return { skills: [], factors: [], howToGet: [] };
+  //   }
+  // },
 };

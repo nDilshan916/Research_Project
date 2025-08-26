@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import torch
-from . import model  # your own model (model.py)
+import model  # your own model (model.py)
 import pandas as pd
 import logging
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -38,7 +38,7 @@ class QwenChatbot:
         inputs = self.tokenizer(text, return_tensors="pt")
         response_ids = self.model.generate(
             **inputs,
-            max_new_tokens=512  # Adjust as needed
+            max_new_tokens=512 
         )[0][len(inputs.input_ids[0]):].tolist()
         response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
         self.history.append({"role": "user", "content": user_input})
@@ -118,6 +118,7 @@ def get_job_dashboard_data(job_title):
         sector_counts = subset['Sector'].value_counts().to_dict() if 'Sector' in subset.columns else {}
         dept_counts = subset['Department'].value_counts().to_dict() if 'Department' in subset.columns else {}
         degree_counts = subset['Type of Degree'].value_counts().to_dict() if 'Type of Degree' in subset.columns else {}
+        honor_grade = subset['Honor Grade of Degree'].value_counts().to_dict() if 'Honor Grade of Degree' in subset.columns else {}
 
         if "Date of current appointment " in subset.columns:
             years = pd.to_datetime(subset["Date of current appointment "], errors="coerce").dt.year
@@ -129,12 +130,69 @@ def get_job_dashboard_data(job_title):
             "sector_counts": sector_counts,
             "dept_counts": dept_counts,
             "degree_counts": degree_counts,
+            "honor_grade": honor_grade,
             "year_counts": year_counts,
             "total_count": len(subset)
         })
     except Exception as e:
         logger.error(f"Dashboard data error for {job_title}: {e}")
         return jsonify({"error": str(e)}), 500
+
+# @app.route('/api/summary-ai', methods=['POST'])
+# def summary_ai():
+#     """
+#     Generates a summary for a given job title using the LLM.
+#     Expects JSON: { "jobTitle": "...", "summaryType": "skills" | "factors" | "howToGet" }
+#     Returns: { "summary": ... }
+#     """
+#     data = request.json
+#     job_title = data.get("jobTitle")
+#     summary_type = data.get("summaryType")
+
+#     if not job_title or not summary_type:
+#         return jsonify({"summary": "Missing jobTitle or summaryType"}), 400
+
+#     job_details = model.get_job_details(job_title) or {}
+
+#     # Get specific context for the summary type
+#     skills = ', '.join(job_details.get('Skills', []))
+#     factors = ', '.join(job_details.get('Factors', []))
+#     how_to_get = ', '.join(job_details.get('HowToGet', []))
+
+#     # Build prompt according to summary type
+#     if summary_type == "skills":
+#         prompt = (
+#             f"List and briefly explain the key skills required to become a {job_title}. "
+#             f"Skills from dataset: {skills}. "
+#             f"Provide a professional, practical summary."
+#         )
+#     elif summary_type == "factors":
+#         prompt = (
+#             f"List and briefly explain the important factors for succeeding as a {job_title}. "
+#             f"Factors from dataset: {factors}. "
+#             f"Provide a professional, practical summary."
+#         )
+#     elif summary_type == "howToGet":
+#         prompt = (
+#             f"List and briefly explain the best ways to become a {job_title}. "
+#             f"How to get this job from dataset: {how_to_get}. "
+#             f"Provide a professional, practical summary."
+#         )
+#     else:
+#         prompt = (
+#             f"I want to become a {job_title}. "
+#             f"Skills required: {skills}. "
+#             f"Important factors: {factors}. "
+#             f"How to get this job: {how_to_get}. "
+#             f"Act as a professional {job_title}, provide practical advice and tips."
+#         )
+
+#     try:
+#         answer = qwen_bot.generate_response(prompt)
+#         return jsonify({"summary": answer})
+#     except Exception as e:
+#         logger.error(f"Summary AI error: {e}")
+#         return jsonify({"summary": f"AI generation failed: {e}"}), 500
 
 @app.route("/api/ai-assistant", methods=["POST"])
 def ai_assistant():
@@ -143,23 +201,28 @@ def ai_assistant():
 
     data = request.json
     job_title = data.get("jobTitle")
-    user_question = data.get("question", "")
+    user_question = data.get("question", "").strip()
 
     job_details = model.get_job_details(job_title)
     if not job_details:
         return jsonify({"answer": "Sorry, I don't have enough data about this job title."}), 404
 
-    # Compose a conversational prompt for Qwen
-    context = (
+    # --- Case 1: No question asked → show ML-provided summary ---
+    if not user_question:
+        summary = (
+            f"**{job_title} Profile Summary**\n\n"
+            f"**Skills Required:** {', '.join(job_details.get('Skills', [])) or 'N/A'}\n"
+            f"**Important Factors:** {', '.join(job_details.get('Factors', [])) or 'N/A'}\n"
+            f"**How to Get This Job:** {', '.join(job_details.get('HowToGet', [])) or 'N/A'}"
+        )
+        return jsonify({"answer": summary})
+
+    # --- Case 2: User asked a question → AI generates fresh advice ---
+    prompt = (
         f"I want to become a {job_title}. "
-        f"Skills required: {', '.join(job_details.get('Skills', []))}. "
-        f"Important factors: {', '.join(job_details.get('Factors', []))}. "
-        f"How to get this job: {', '.join(job_details.get('HowToGet', []))}. "
+        f"{user_question} "
+        f"Please provide a professional, step-by-step guide with practical advice and tips."
     )
-    if user_question.strip():
-        prompt = f"{context} {user_question.strip()} Please give me a professional, step-by-step guide with practical advice and tips."
-    else:
-        prompt = f"{context} Please give me a professional, step-by-step guide with practical advice and tips."
 
     try:
         answer = qwen_bot.generate_response(prompt)
@@ -167,6 +230,7 @@ def ai_assistant():
     except Exception as e:
         logger.error(f"AI assistant error: {e}")
         return jsonify({"answer": "AI generation failed: " + str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
